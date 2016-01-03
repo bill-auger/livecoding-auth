@@ -156,6 +156,7 @@ if(!class_exists('LivecodingAuth')) {
      */
     private function post_url_contents($url, $fields, $custom_header = []) {
 
+        $fields_string = '';
         foreach($fields as $key=>$value)
           $fields_string .= $key.'='.urlencode($value).'&';
 

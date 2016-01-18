@@ -56,16 +56,21 @@ if(!class_exists('LivecodingAuth')) {
       $this->redirect_url = $redirect_url;
       $this->scope = $scope;
       $this->state = uniqid();
-      if ($storage == TEXT_STORE)
+
+      if ($storage == TEXT_STORE) {
         $this->tokens = new LivecodingAuthTokensText();
-      else // ($storage == SESSION_STORE)
+      } else { // ($storage == SESSION_STORE) 
         $this->tokens = new LivecodingAuthTokensSession();
-      $this->auth_link = 'https://www.livecoding.tv/o/authorize/?'.
-        'scope='.$this->scope.'&'.
-        'state='.$this->state.'&'.
-        'redirect_uri='.$this->redirect_url.'&'.
-        'response_type=code&'.
-        'client_id='.$this->client_id;
+      }
+
+      $this->auth_link = 'https://www.livecoding.tv/o/authorize/?'.http_build_query(array(
+        'scope' => $this->scope,
+        'state' => $this->state,
+        'redirect_uri' => $this->redirect_url,
+        'response_type' => 'code',
+        'client_id' => $this->client_id,
+      ));
+
       $this->token_req_headers = [
         "Cache-Control: no-cache",
         "Pragma: no-cache",
@@ -81,7 +86,6 @@ if(!class_exists('LivecodingAuth')) {
         "Pragma: no-cache",
         'Authorization: TOKEN_TYPE_DEFERRED ACCESS_TOKEN_DEFERRED'
       ];
-
 
       // Check the storage for existing tokens
       if ($this->tokens->isAuthorized()) {
@@ -109,7 +113,9 @@ if(!class_exists('LivecodingAuth')) {
      */
     public function fetchData($data_path) {
       // Refresh tokens from API server if necessary
-      if ($this->tokens->is_stale()) $this->refreshToken();
+      if ($this->tokens->is_stale()) {
+        $this->refreshToken();
+      }
 
       // Retrieve some data:
       $data = $this->sendGetRequest($data_path);
@@ -156,10 +162,7 @@ if(!class_exists('LivecodingAuth')) {
      */
     private function post_url_contents($url, $fields, $custom_header = []) {
 
-        foreach($fields as $key=>$value)
-          $fields_string .= $key.'='.urlencode($value).'&';
-
-        rtrim($fields_string, '&');
+        $fields_string = http_build_query($fields);
 
         $crl = curl_init();
         $timeout = 5;
@@ -249,7 +252,7 @@ if(!class_exists('LivecodingAuthTokens')) {
         $this->setAccessToken($tokens->access_token);
         $this->setTokenType($tokens->token_type);
         $this->setRefreshToken($tokens->refresh_token);
-        $this->setExpiresIn('Y-m-d H:i:s', (time() + $tokens->expires_in));
+        $this->setExpiresIn(date('Y-m-d H:i:s', (time() + $tokens->expires_in)));
         $this->setScope($tokens->scope);
       }
     } // storeTokens
@@ -313,8 +316,9 @@ if(!class_exists('LivecodingAuthTokensSession')) {
   **/
   class LivecodingAuthTokensSession extends LivecodingAuthTokens {
     function __construct() {
-      if (!isset($_SESSION))
+      if (!isset($_SESSION)) {
         session_start();
+      }
     } // __construct
 
     public function isAuthorized() {
@@ -450,5 +454,3 @@ if(!class_exists('LivecodingAuthTokensText')) {
   } // class LivecodingAuthTokensText
 
 } // if(!class_exists('LivecodingAuthTokensText'))
-
-?>
